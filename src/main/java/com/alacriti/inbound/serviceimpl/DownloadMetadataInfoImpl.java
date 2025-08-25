@@ -5,7 +5,7 @@ import com.alacriti.inbound.service.IDownloadMetadataInfo;
 
 public class DownloadMetadataInfoImpl implements IDownloadMetadataInfo {
 	
-	  private final String downloadDir;
+	    private final String downloadDir;
 	    private final String decryptDir;
 	    private final String privateKeyDir;
 	    private final String passphrase;

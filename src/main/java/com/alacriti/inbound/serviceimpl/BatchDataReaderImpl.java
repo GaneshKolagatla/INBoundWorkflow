@@ -6,7 +6,7 @@ public class BatchDataReaderImpl implements IBatchDataReader {
 
 	@Override
 	public void read() {
-		// TODO Auto-generated method stub
+		
 
 	}
 
