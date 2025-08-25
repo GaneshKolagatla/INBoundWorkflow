@@ -1,5 +1,7 @@
 package com.alacriti.inbound.service;
 
+import com.alacriti.inbound.util.ACHFile;
+
 public interface IBatchDataPreProcessor {
-	public void preProcess();
+	void preprocess(ACHFile achFile) throws Exception;
 }
