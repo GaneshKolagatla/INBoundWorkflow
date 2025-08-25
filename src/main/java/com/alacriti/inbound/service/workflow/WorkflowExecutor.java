@@ -1,14 +1,18 @@
 package com.alacriti.inbound.service.workflow;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-
+@Service
 public class WorkflowExecutor {
 
-    private final BatchWorkFlow workFlow;
+	@Autowired
+	private final BatchWorkFlow workFlow;
 
-    public WorkflowExecutor(BatchWorkFlow workFlow) {
-        this.workFlow = workFlow;
-    }
+	public WorkflowExecutor(BatchWorkFlow workFlow) {
+		this.workFlow = workFlow;
+	}
+
 
     public void execute() throws Exception {
         //Reads file and converts that file contents into java objects
@@ -27,5 +31,5 @@ public class WorkflowExecutor {
         //event with filename and date;
         workFlow.getFilePostProcessor().postProcess();
     }
-}
 
+}

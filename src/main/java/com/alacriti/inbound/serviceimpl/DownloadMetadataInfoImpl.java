@@ -3,6 +3,9 @@ package com.alacriti.inbound.serviceimpl;
 import com.alacriti.inbound.model.SftpServerCredentials;
 import com.alacriti.inbound.service.IDownloadMetadataInfo;
 
+import lombok.Data;
+
+@Data
 public class DownloadMetadataInfoImpl implements IDownloadMetadataInfo {
 	
 	    private final String downloadDir;
@@ -10,6 +13,8 @@ public class DownloadMetadataInfoImpl implements IDownloadMetadataInfo {
 	    private final String privateKeyDir;
 	    private final String passphrase;
 	    private final SftpServerCredentials credentialObj;
+	    
+	    
 	    
 
 	    // Constructor (Immutable style)
