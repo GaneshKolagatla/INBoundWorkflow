@@ -3,13 +3,15 @@ package com.alacriti.inbound.service.workflow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.alacriti.inbound.service.IWorkflowExecutor;
+
 @Service
-public class WorkflowExecutor {
+public class WorkflowExecutorImpl implements IWorkflowExecutor {
 
 	@Autowired
 	private final BatchWorkFlow workFlow;
 
-	public WorkflowExecutor(BatchWorkFlow workFlow) {
+	public WorkflowExecutorImpl(BatchWorkFlow workFlow) {
 		this.workFlow = workFlow;
 	}
 
