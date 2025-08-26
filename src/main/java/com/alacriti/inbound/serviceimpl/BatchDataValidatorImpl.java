@@ -1,5 +1,6 @@
 package com.alacriti.inbound.serviceimpl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.alacriti.inbound.constants.SecCodes;
@@ -9,6 +10,7 @@ import com.alacriti.inbound.exceptions.InvalidRoutingNumberException;
 import com.alacriti.inbound.exceptions.InvalidSECCodeException;
 import com.alacriti.inbound.exceptions.InvalidTransactionCodeException;
 import com.alacriti.inbound.service.IBatchDataValidator;
+import com.alacriti.inbound.service.IFileEventLogService;
 import com.alacriti.inbound.util.ACHFile;
 import com.alacriti.inbound.util.Batch;
 import com.alacriti.inbound.util.BatchHeader;
@@ -24,9 +26,13 @@ public class BatchDataValidatorImpl implements IBatchDataValidator {
 
 	private final TransactionCodes transactionCodes;
 	private final SecCodes secCodes;
+	@Autowired
+	IFileEventLogService service;
 
 	@Override
 	public void validate(ACHFile file) throws ACHValidationException {
+		
+		try {
 		log.info("🔍 Starting ACH file validation...");
 
 		if (file == null) {
@@ -85,6 +91,14 @@ public class BatchDataValidatorImpl implements IBatchDataValidator {
 
 		log.info("✅ File control validation passed");
 		log.info("🎉 All validations completed successfully!");
+		service.logEvent(file.fileName, "VALIDATE", "SUCCESS");
+	}catch(Exception e) {
+		service.logEvent(file.fileName,"VALIDATE", "FAILED");
+			e.printStackTrace();
+			e.getMessage();
+			
+			
+		}
 	}
 
 	private void validateBatchHeader(BatchHeader header, int batchNum) throws ACHValidationException {

@@ -5,9 +5,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.alacriti.inbound.service.IBatchDataReader;
+import com.alacriti.inbound.service.IFileEventLogService;
 import com.alacriti.inbound.util.ACHFile;
 import com.alacriti.inbound.util.Batch;
 import com.alacriti.inbound.util.BatchControl;
@@ -23,19 +25,38 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class BatchDataReaderImpl implements IBatchDataReader {
+	
+	 @Autowired
+     IFileEventLogService service;
 
     @Override
     public ACHFile read(File file) throws Exception {
+    	ACHFile achFile = new ACHFile();
+    	
+    	try {
         log.info("📂 Reading ACH file: {}", file.getAbsolutePath());
         List<String> lines = Files.readAllLines(file.toPath());
-        ACHFile achFile = new ACHFile();
+        
+        achFile.setFileName(file.getName());
+        
+        String fileName = file.getName();
+        
+        String baseName = fileName.substring(0, fileName.lastIndexOf('.')); 
+        
+        String[] parts = baseName.split("_");
+        
+        String creationDate = parts[2]; // "20250821"
+
+        achFile.setCreationDate(creationDate); // Set in ACHFile
+
         List<Batch> batches = new ArrayList<>();
         Batch currentBatch = null;
 
         for (String line : lines) {
             if (line.length() < 94) {
-                log.warn("Skipping invalid line (length < 94): {}", line);
-                continue;
+            	throw new Exception();
+//                log.warn("Skipping invalid line (length < 94): {}", line);
+//                continue;
             }
 
             char type = line.charAt(0);
@@ -69,8 +90,14 @@ public class BatchDataReaderImpl implements IBatchDataReader {
         }
 
         achFile.setBatches(batches);
-        return achFile;
+        
+    	}catch(Exception e) {
+    		service.logEvent(achFile.getFileName(), "READ","FAILED");
+    	}
+    	service.logEvent(achFile.getFileName(), "READ","SUCCESS");
+		return achFile;
     }
+   
 
     private FileHeader parseFileHeader(String l) {
         FileHeader h = new FileHeader();

@@ -2,6 +2,7 @@ package com.alacriti.inbound.serviceimpl;
 
 
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -10,11 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.alacriti.inbound.service.IBatchDataPostProcessor;
+import com.alacriti.inbound.service.IFileEventLogService;
 import com.alacriti.inbound.util.ACHFile;
 
 @Service
 public class BatchDataPostProcessorImpl implements IBatchDataPostProcessor {
-
+	
+	     @Autowired
+         IFileEventLogService service;
 	
 	public void postProcess(ACHFile file) {
 		String rawDate = file.getCreationDate();
@@ -34,10 +38,12 @@ public class BatchDataPostProcessorImpl implements IBatchDataPostProcessor {
 	        headers.setContentType(MediaType.APPLICATION_XML);
 
 	        HttpEntity<String> request = new HttpEntity<>(xmlPayload, headers);
-	        String endpoint = "https://7ea3d690c952.ngrok-free.app/send-file-notification";
+	        String endpoint = "https://4beb06658aa0.ngrok-free.app/send-file-notification";
 	        ResponseEntity<String> response = restTemplate.postForEntity(endpoint, request, String.class);
 	        System.out.println("Response: " + response.getBody());
+	        service.logEvent(file.getFileName(), "Post-Process", "SUCCESS");
 	    } catch (Exception e) {
+	    	service.logEvent(file.getFileName(), "Post-Process", "FAILED");
 	        e.printStackTrace();
 	    }
 

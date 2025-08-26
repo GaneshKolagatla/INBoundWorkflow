@@ -37,7 +37,7 @@ public class WorkflowExecutorImpl implements IWorkflowExecutor {
 
 		for (File file : files) {
 			try {
-				log.info("🚀 Starting workflow for file: {}", ((Logger) file).getName());
+				log.info("🚀 Starting workflow for file: {}", file.getName());
 
 				// Step 1: Read
 				ACHFile achFile = workFlow.getFileReader().read(file);
