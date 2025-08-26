@@ -14,6 +14,7 @@ import com.alacriti.inbound.service.IFileEventLogService;
 @Service
 public class FileEventLogServiceImpl implements IFileEventLogService {
 
+	
     private final FileEventLogRepository repository;
 
     public FileEventLogServiceImpl(FileEventLogRepository repository) {

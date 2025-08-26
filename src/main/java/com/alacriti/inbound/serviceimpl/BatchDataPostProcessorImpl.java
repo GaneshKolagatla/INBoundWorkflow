@@ -7,25 +7,27 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.client.RestTemplate;
 
 import com.alacriti.inbound.service.IBatchDataPostProcessor;
+import com.alacriti.inbound.util.ACHFile;
 
 @Service
 public class BatchDataPostProcessorImpl implements IBatchDataPostProcessor {
 
-	@Override
-	@PostMapping("/hitkafka")
-	public void postProcess() {
+	
+	public void postProcess(ACHFile file) {
+		String rawDate = file.getCreationDate();
+		String formattedDate = rawDate.substring(0, 4) + "-" + rawDate.substring(4, 6) + "-" + rawDate.substring(6, 8);
+
 		try {
 	        String xmlPayload = """
 	           <FileNotification>
-                 <fileName>monthly_report_august.pdf</fileName>
+                 <fileName>%s</fileName>
                  <clientKey>ICICI001</clientKey>
-                 <date>2025-08-25</date>
+                 <date>%s</date>
                </FileNotification>
-	            """.formatted();
+	            """.formatted(file.getFileName(),formattedDate);
 
 	        RestTemplate restTemplate = new RestTemplate();
 	        HttpHeaders headers = new HttpHeaders();

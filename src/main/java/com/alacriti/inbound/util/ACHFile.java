@@ -9,4 +9,6 @@ public class ACHFile {
 	public FileHeader fileHeader;
 	public List<Batch> batches;
 	public FileControl fileControl;
+	public String fileName;
+	public String creationDate;
 }

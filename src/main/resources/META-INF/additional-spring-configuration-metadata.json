@@ -1,0 +1,22 @@
+{"properties": [
+  {
+    "name": "app.private.key.path",
+    "type": "java.lang.String",
+    "description": "A description for 'app.private.key.path'"
+  },
+  {
+    "name": "app.download.dir",
+    "type": "java.lang.String",
+    "description": "A description for 'app.download.dir'"
+  },
+  {
+    "name": "app.passphrase",
+    "type": "java.lang.String",
+    "description": "A description for 'app.passphrase'"
+  },
+  {
+    "name": "app.decrypted.dir",
+    "type": "java.lang.String",
+    "description": "A description for 'app.decrypted.dir'"
+  }
+]}
