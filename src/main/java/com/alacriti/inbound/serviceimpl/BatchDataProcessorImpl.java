@@ -179,7 +179,7 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 		return fs;
 	}
 
-	// ----------------- helpers -----------------
+	/*----------------- helpers -----------------*/
 	private String safe(String v) {
 		return Objects.toString(v, "");
 	}
