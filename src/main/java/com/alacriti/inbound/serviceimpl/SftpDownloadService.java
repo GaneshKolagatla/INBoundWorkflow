@@ -1,7 +1,5 @@
 package com.alacriti.inbound.serviceimpl;
 
-
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -25,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SftpDownloadService {
 
 	private final PGPDecryptionService pgpEncryptionService;
-	
+
 	@Autowired
 	IFileEventLogService service;
 
@@ -33,8 +31,8 @@ public class SftpDownloadService {
 		this.pgpEncryptionService = pgpEncryptionService;
 	}
 
-	public void downloadAndDecryptByDate(SftpServerCredentials config, String date, String downloadDir, String decryptedDir,
-			String privateKeyPath, String passphrase) throws Exception {
+	public void downloadAndDecryptByDate(SftpServerCredentials config, String date, String downloadDir,
+			String decryptedDir, String privateKeyPath, String passphrase) throws Exception {
 
 		List<File> downloadedFiles = downloadFilesFromSftp(config, date, downloadDir);
 
@@ -62,6 +60,7 @@ public class SftpDownloadService {
 
 				if (decryptedFile.length() > 0) {
 					log.info("✅ Successfully decrypted: {}", decryptedFile.getAbsolutePath());
+					service.logEvent(decryptedFile.getName(), "Ready to Process", "SUCCESS");
 				} else {
 					log.warn("⚠️ Decrypted file is empty, skipping: {}", decryptedFile.getName());
 					decryptedFile.delete();
@@ -72,7 +71,8 @@ public class SftpDownloadService {
 		}
 	}
 
-	private List<File> downloadFilesFromSftp(SftpServerCredentials config, String date, String downloadDir) throws Exception {
+	private List<File> downloadFilesFromSftp(SftpServerCredentials config, String date, String downloadDir)
+			throws Exception {
 		List<File> downloadedFiles = new ArrayList<>();
 
 		JSch jsch = new JSch();
@@ -104,8 +104,8 @@ public class SftpDownloadService {
 
 			downloadedFiles.add(localFile);
 			log.info("⬇️ File downloaded from SFTP: {}", fileName);
-			service.logEvent(entry.getFilename(), "DOWNLOAD", "SUCCESS");
-			
+			//service.logEvent(entry.getFilename(), "DOWNLOAD", "SUCCESS");
+
 		}
 
 		sftp.disconnect();
