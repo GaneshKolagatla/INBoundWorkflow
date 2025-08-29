@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.alacriti.inbound.model.BatchHeaderDetails;
@@ -15,6 +16,7 @@ import com.alacriti.inbound.repository.EntryDetailRepository;
 import com.alacriti.inbound.repository.FileHeaderRepository;
 import com.alacriti.inbound.repository.FileSummaryRepository;
 import com.alacriti.inbound.service.IBatchDataProcessor;
+import com.alacriti.inbound.service.IFileEventLogService;
 import com.alacriti.inbound.util.ACHFile;
 import com.alacriti.inbound.util.Batch;
 
@@ -30,6 +32,9 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 	private final BatchHeaderRepository batchHeaderRepository;
 	private final EntryDetailRepository entryDetailRepository;
 	private final FileSummaryRepository fileSummaryRepository;
+	
+	@Autowired
+	private IFileEventLogService service;
 
 	/**
 	 * Persist ACH structures (already parsed & validated) to DB.
@@ -37,6 +42,8 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 	 */
 	@Override
 	public void process(ACHFile achFile) {
+		
+		try {
 		if (achFile == null) {
 			log.warn("process(): ACHFile is null — nothing to persist.");
 			return;
@@ -80,6 +87,11 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 		log.info("✅ FileSummary saved");
 
 		log.info("🎉 ACH file persisted successfully.");
+		service.logEvent(achFile.getFileName(), "Process", "SUCCESS");
+		
+		}catch(Exception e) {
+			service.logEvent(achFile.getFileName(), "Process","FAILED");
+		}
 	}
 
 	// ----------------- MAPPERS (util -> entity) -----------------

@@ -8,10 +8,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import com.alacriti.inbound.model.SftpServerCredentials;
+import com.alacriti.inbound.service.IFileEventLogService;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
@@ -23,6 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 public class SftpDownloadService {
 
 	private final PGPDecryptionService pgpEncryptionService;
+	
+	@Autowired
+	IFileEventLogService service;
 
 	public SftpDownloadService(PGPDecryptionService pgpEncryptionService) {
 		this.pgpEncryptionService = pgpEncryptionService;
@@ -99,6 +104,8 @@ public class SftpDownloadService {
 
 			downloadedFiles.add(localFile);
 			log.info("⬇️ File downloaded from SFTP: {}", fileName);
+			service.logEvent(entry.getFilename(), "DOWNLOAD", "SUCCESS");
+			
 		}
 
 		sftp.disconnect();

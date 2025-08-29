@@ -1,8 +1,10 @@
 package com.alacriti.inbound.serviceimpl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.alacriti.inbound.service.IBatchDataPreProcessor;
+import com.alacriti.inbound.service.IFileEventLogService;
 import com.alacriti.inbound.util.ACHFile;
 import com.alacriti.inbound.util.Batch;
 import com.alacriti.inbound.util.EntryDetail;
@@ -12,9 +14,14 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class BatchDataPreProcessorImpl implements IBatchDataPreProcessor {
+	
+	          @Autowired
+              IFileEventLogService service;
 
 	@Override
-	public void preprocess(ACHFile achFile) throws Exception {
+	public void preProcess(ACHFile achFile) throws Exception {
+		
+		try {
 		log.info("🔄 Starting pre-processing for ACH file...");
 
 		// Add file-level metadata
@@ -37,5 +44,9 @@ public class BatchDataPreProcessorImpl implements IBatchDataPreProcessor {
 		}
 
 		log.info("✅ Pre-processing completed for file: {}");
+		service.logEvent(achFile.getFileName(),"Pre-Process", "SUCCESS");
+	}catch(Exception e) {
+		service.logEvent(achFile.getFileName(), "Pre-Process", "FAILED");
 	}
+}
 }
