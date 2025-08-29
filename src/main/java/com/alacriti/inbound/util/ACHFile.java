@@ -11,4 +11,6 @@ public class ACHFile {
 	public FileControl fileControl;
 	public String fileName;
 	public String creationDate;
+	public Long remoteId;
+	
 }

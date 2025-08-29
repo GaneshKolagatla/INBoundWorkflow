@@ -1,8 +1,8 @@
 package com.alacriti.inbound.service;
 
 import java.io.File;
-import java.util.List;
+import java.util.Map;
 
 public interface IWorkflowExecutor {
-	void execute(List<File> files) throws Exception;
+	void execute(Map<Long,File> map) throws Exception;
 }

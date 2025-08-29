@@ -2,6 +2,7 @@ package com.alacriti.inbound.controller;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,23 +32,28 @@ public class AchNachaFileHandler {
 	@GetMapping("/download/process")
 	public void achFileProcessor() {
 		// Step 1: Get file records with "Ready to Process" status
+		// Step 1: Fetch ready files
 		List<FileEventLog> readyFiles = fileEventLogService.getFilesByEvents("Ready to Process");
 
 		if (readyFiles.isEmpty()) {
-			System.out.println("No files available for processing.");
-			return;
+		    System.out.println("No files available for processing.");
+		    return;
 		}
 
-		// Step 2: Extract file names & convert to File objects
-		List<File> files = readyFiles.stream().map(f -> new File(DOWNLOAD_DIR, f.getFileName()))
-				.collect(Collectors.toList());
+		// Step 2: Build Map<ID, File>
+		Map<Long, File> fileMap = readyFiles.stream()
+		        .collect(Collectors.toMap(
+		                FileEventLog::getId, 
+		                f -> new File(DOWNLOAD_DIR, f.getFileName())
+		        ));
 
 		// Step 3: Call workflow executor
-		workflowExecutor.execute(files);
+		workflowExecutor.execute(fileMap);
 
-		// Step 4: Update status in DB
-		for (FileEventLog fileLog : readyFiles) {
-			fileEventLogService.updateFileEvent(fileLog.getId(), "File Processed");
-		}
+		// Step 4: Update status in DB after processing
+//		for (Long id : fileMap.keySet()) {
+//		    fileEventLogService.updateFileEvent(id, "File Processed");
+//		}
+
 	}
 }

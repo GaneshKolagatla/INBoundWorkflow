@@ -5,6 +5,6 @@ import java.io.File;
 import com.alacriti.inbound.util.ACHFile;
 
 public interface IBatchDataReader {
-	ACHFile read(File file) throws Exception;
+	ACHFile read(File file,Long remoteId) throws Exception;
 
 }

@@ -39,9 +39,9 @@ public class BatchDataPostProcessorImpl implements IBatchDataPostProcessor {
 			String endpoint = "https://4beb06658aa0.ngrok-free.app/send-file-notification";
 			ResponseEntity<String> response = restTemplate.postForEntity(endpoint, request, String.class);
 			System.out.println("Response: " + response.getBody());
-			//service.logEvent(file.getFileName(), "Post-Process", "SUCCESS");
+			
 		} catch (Exception e) {
-			//service.logEvent(file.getFileName(), "Post-Process", "FAILED");
+			
 			e.printStackTrace();
 		}
 

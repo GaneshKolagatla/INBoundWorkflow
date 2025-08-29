@@ -30,9 +30,11 @@ public class BatchDataReaderImpl implements IBatchDataReader {
 	IFileEventLogService service;
 
 	@Override
-	public ACHFile read(File file) throws Exception {
+	public ACHFile read(File file,Long remoteId) throws Exception {
 		ACHFile achFile = new ACHFile();
+		achFile.remoteId=remoteId;
 
+		
 		try {
 			log.info("📂 Reading ACH file: {}", file.getAbsolutePath());
 			List<String> lines = Files.readAllLines(file.toPath());
@@ -92,9 +94,9 @@ public class BatchDataReaderImpl implements IBatchDataReader {
 			achFile.setBatches(batches);
 
 		} catch (Exception e) {
-			//service.logEvent(achFile.getFileName(), "READ", "FAILED");
+			service.updateFileEvent(achFile.remoteId, "FILE-READED", "FAILED");
 		}
-		//service.logEvent(achFile.getFileName(), "READ", "SUCCESS");
+		service.updateFileEvent(achFile.remoteId, "FILE-READED", "SUCESS");
 		return achFile;
 	}
 

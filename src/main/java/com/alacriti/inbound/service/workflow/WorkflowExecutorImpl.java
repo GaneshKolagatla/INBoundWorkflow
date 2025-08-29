@@ -2,9 +2,8 @@ package com.alacriti.inbound.service.workflow;
 
 
 import java.io.File;
-import java.util.List;
+import java.util.Map;
 
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,37 +28,41 @@ public class WorkflowExecutorImpl implements IWorkflowExecutor {
 	public WorkflowExecutorImpl(BatchWorkFlow workFlow) {
 		this.workFlow = workFlow;
 	}
-	public void execute(List<File> files) {
-		if (files == null || files.isEmpty()) {
+	public void execute(Map<Long, File> map) {
+		if (map == null || map.isEmpty()) {
 			log.info("⚠️ No ACH files provided for workflow execution.");
 			return;
 		}
 
-		for (File file : files) {
-			try {
-				log.info("🚀 Starting workflow for file: {}", file.getName());
+		for (Map.Entry<Long, File> entry : map.entrySet()) {
+		    Long remoteId = entry.getKey();
+		    File file = entry.getValue();
 
-				// Step 1: Read
-				ACHFile achFile = workFlow.getFileReader().read(file);
+		    try {
+		        log.info("🚀 Starting workflow for file: {}", file.getName());
 
-				// Step 2: Validate
-				workFlow.getFileValidator().validate(achFile);
+		        // Step 1: Read
+		        ACHFile achFile = workFlow.getFileReader().read(file,remoteId);
 
-				// Step 3: Pre-process
-				workFlow.getFilePreProcessor().preProcess(achFile);
+		        // Step 2: Validate
+		        workFlow.getFileValidator().validate(achFile);
 
-				// Step 4: Process
-				workFlow.getFileProcessor().process(achFile);
+		        // Step 3: Pre-process
+		        workFlow.getFilePreProcessor().preProcess(achFile);
 
-				// Step 5: Post-process
-				workFlow.getFilePostProcessor().postProcess(achFile);
+		        // Step 4: Process
+		        workFlow.getFileProcessor().process(achFile);
 
-				log.info("✅ Finished workflow for file: {}", file.getName());
+		        // Step 5: Post-process
+		        workFlow.getFilePostProcessor().postProcess(achFile);
 
-			} catch (Exception e) {
-				log.error("❌ Error processing file {}: {}", file.getName(), e.getMessage(), e);
-			}
+		        log.info("✅ Finished workflow for file: {}", file.getName());
+
+		    } catch (Exception e) {
+		        log.error("❌ Error processing file {}: {}", file.getName(), e.getMessage(), e);
+		    }
 		}
+
 
 	}
 }

@@ -18,25 +18,30 @@ public class FileEventLogServiceImpl implements IFileEventLogService {
 		this.repository = repository;
 	}
 
+	
 	@Override
-	public void logEvent(String fileName, String event, String status) {
-		FileEventLog log = new FileEventLog();
-		log.setFileName(fileName);
-		log.setEvent(event);
-		log.setStatus(status);
-		log.setTimestamp(LocalDateTime.now());
-		repository.save(log);
-	}
-
 	public List<FileEventLog> getFilesByEvents(String status) {
 		return repository.findByEvent(status);
 	}
 
-	public void updateFileEvent(Long id, String newEvent) {
+	@Override
+	public void updateFileEvent(Long id, String newEvent,String newStatus) {
 		FileEventLog log = repository.findById(id)
 				.orElseThrow(() -> new RuntimeException("FileEventLog not found with id " + id));
 		log.setEvent(newEvent);
 		log.setTimestamp(LocalDateTime.now());
+		log.setStatus(newStatus);
 		repository.save(log);
 	}
+
+
+	@Override
+    public void logEvent(String fileName, String event, String status) {
+        FileEventLog log = new FileEventLog();
+        log.setFileName(fileName);
+        log.setEvent(event);
+        log.setStatus(status);
+        log.setTimestamp(LocalDateTime.now());
+        repository.save(log);
+    }
 }

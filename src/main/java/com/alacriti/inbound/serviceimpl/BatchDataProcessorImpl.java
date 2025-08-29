@@ -87,10 +87,10 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 			log.info("✅ FileSummary saved");
 
 			log.info("🎉 ACH file persisted successfully.");
-			//service.logEvent(achFile.getFileName(), "Process", "SUCCESS");
+			service.updateFileEvent(achFile.remoteId, "FILE-PROCESSED", "SUCCESS");
 
 		} catch (Exception e) {
-			//service.logEvent(achFile.getFileName(), "Process","FAILED");
+			service.updateFileEvent(achFile.remoteId, "FILE-PROCESSED", "FAILED");
 		}
 	}
 
