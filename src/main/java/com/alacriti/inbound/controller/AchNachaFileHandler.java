@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.alacriti.inbound.model.FileEventLog;
 import com.alacriti.inbound.service.workflow.WorkflowExecutorImpl;
 import com.alacriti.inbound.serviceimpl.FileEventLogServiceImpl;
 
-@Controller
+@RestController
 public class AchNachaFileHandler {
 
 	@Autowired
@@ -28,10 +28,10 @@ public class AchNachaFileHandler {
 		this.workflowExecutor = workflowExecutor;
 	}
 
-	@GetMapping("download/process")
+	@GetMapping("/download/process")
 	public void achFileProcessor() {
 		// Step 1: Get file records with "Ready to Process" status
-		List<FileEventLog> readyFiles = fileEventLogService.getFilesByStatus("Ready to Process");
+		List<FileEventLog> readyFiles = fileEventLogService.getFilesByEvents("Ready to Process");
 
 		if (readyFiles.isEmpty()) {
 			System.out.println("No files available for processing.");
@@ -47,7 +47,7 @@ public class AchNachaFileHandler {
 
 		// Step 4: Update status in DB
 		for (FileEventLog fileLog : readyFiles) {
-			fileEventLogService.updateFileStatus(fileLog.getId(), "File Processed");
+			fileEventLogService.updateFileEvent(fileLog.getId(), "File Processed");
 		}
 	}
 }

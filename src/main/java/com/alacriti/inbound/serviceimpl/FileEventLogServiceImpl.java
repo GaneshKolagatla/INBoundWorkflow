@@ -28,14 +28,14 @@ public class FileEventLogServiceImpl implements IFileEventLogService {
 		repository.save(log);
 	}
 
-	public List<FileEventLog> getFilesByStatus(String status) {
-		return repository.findByStatus(status);
+	public List<FileEventLog> getFilesByEvents(String status) {
+		return repository.findByEvent(status);
 	}
 
-	public void updateFileStatus(Long id, String newStatus) {
+	public void updateFileEvent(Long id, String newEvent) {
 		FileEventLog log = repository.findById(id)
 				.orElseThrow(() -> new RuntimeException("FileEventLog not found with id " + id));
-		log.setStatus(newStatus);
+		log.setEvent(newEvent);
 		log.setTimestamp(LocalDateTime.now());
 		repository.save(log);
 	}

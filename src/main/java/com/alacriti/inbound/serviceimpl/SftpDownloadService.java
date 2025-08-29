@@ -104,7 +104,7 @@ public class SftpDownloadService {
 
 			downloadedFiles.add(localFile);
 			log.info("⬇️ File downloaded from SFTP: {}", fileName);
-			service.logEvent(entry.getFilename(), "DOWNLOAD", "SUCCESS");
+			//service.logEvent(entry.getFilename(), "DOWNLOAD", "SUCCESS");
 
 		}
 

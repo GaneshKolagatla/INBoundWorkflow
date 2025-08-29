@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.alacriti.inbound.model.FileEventLog;
 
 public interface FileEventLogRepository extends JpaRepository<FileEventLog, Long> {
-	List<FileEventLog> findByStatus(String status);
+	List<FileEventLog> findByEvent(String status);
 
 }
