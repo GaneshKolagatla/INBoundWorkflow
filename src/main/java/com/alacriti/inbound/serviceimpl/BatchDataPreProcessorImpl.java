@@ -14,39 +14,39 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class BatchDataPreProcessorImpl implements IBatchDataPreProcessor {
-	
-	          @Autowired
-              IFileEventLogService service;
+
+	@Autowired
+	IFileEventLogService service;
 
 	@Override
 	public void preProcess(ACHFile achFile) throws Exception {
-		
+
 		try {
-		log.info("🔄 Starting pre-processing for ACH file...");
+			log.info("🔄 Starting pre-processing for ACH file...");
 
-		// Add file-level metadata
-		//achFile.setProcessedTime(java.time.LocalDateTime.now());
+			// Add file-level metadata
+			//achFile.setProcessedTime(java.time.LocalDateTime.now());
 
-		// Clean / normalize each entry
-		for (Batch batch : achFile.getBatches()) {
-			for (EntryDetail entry : batch.getEntryDetails()) {
-				// Example: remove leading zeros in amount
-				String amount = entry.getAmount();
-				if (amount != null) {
-					entry.setAmount(amount.replaceFirst("^0+(?!$)", ""));
-				}
+			// Clean / normalize each entry
+			for (Batch batch : achFile.getBatches()) {
+				for (EntryDetail entry : batch.getEntryDetails()) {
+					// Example: remove leading zeros in amount
+					String amount = entry.getAmount();
+					if (amount != null) {
+						entry.setAmount(amount.replaceFirst("^0+(?!$)", ""));
+					}
 
-				// Example: trim name fields
-				if (entry.getIndividualName() != null) {
-					entry.setIndividualName(entry.getIndividualName().trim());
+					// Example: trim name fields
+					if (entry.getIndividualName() != null) {
+						entry.setIndividualName(entry.getIndividualName().trim());
+					}
 				}
 			}
-		}
 
-		log.info("✅ Pre-processing completed for file: {}");
-		service.logEvent(achFile.getFileName(),"Pre-Process", "SUCCESS");
-	}catch(Exception e) {
-		service.logEvent(achFile.getFileName(), "Pre-Process", "FAILED");
+			log.info("✅ Pre-processing completed for file: {}");
+			//service.logEvent(achFile.getFileName(),"Pre-Process", "SUCCESS");
+		} catch (Exception e) {
+			//service.logEvent(achFile.getFileName(), "Pre-Process", "FAILED");
+		}
 	}
-}
 }

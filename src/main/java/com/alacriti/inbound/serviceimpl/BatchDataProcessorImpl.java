@@ -32,7 +32,7 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 	private final BatchHeaderRepository batchHeaderRepository;
 	private final EntryDetailRepository entryDetailRepository;
 	private final FileSummaryRepository fileSummaryRepository;
-	
+
 	@Autowired
 	private IFileEventLogService service;
 
@@ -42,55 +42,55 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 	 */
 	@Override
 	public void process(ACHFile achFile) {
-		
+
 		try {
-		if (achFile == null) {
-			log.warn("process(): ACHFile is null — nothing to persist.");
-			return;
-		}
-
-		log.info("🔹 Persisting ACH file …");
-
-		// 1) FILE HEADER
-		FileHeaderDetails fileHeader = mapFileHeader(achFile);
-		fileHeader = fileHeaderRepository.save(fileHeader);
-		log.info("✅ FileHeader saved (id={})", fileHeader.getId());
-
-		// 2) BATCHES + ENTRIES
-		List<Batch> batches = achFile.getBatches();
-		if (batches != null && !batches.isEmpty()) {
-			int batchIdx = 0;
-			for (Batch b : batches) {
-				batchIdx++;
-
-				BatchHeaderDetails batchHeader = mapBatchHeader(b);
-				batchHeader = batchHeaderRepository.save(batchHeader);
-				log.info("✅ BatchHeader saved (id={}) [#{}]", batchHeader.getId(), batchIdx);
-
-				if (b.getEntryDetails() != null) {
-					int entryIdx = 0;
-					for (com.alacriti.inbound.util.EntryDetail e : b.getEntryDetails()) {
-						entryIdx++;
-						EntryDetails entry = mapEntryDetail(e, b);
-						entryDetailRepository.save(entry);
-					}
-					log.info("   ↳ {} EntryDetails saved for batch #{}", b.getEntryDetails().size(), batchIdx);
-				}
+			if (achFile == null) {
+				log.warn("process(): ACHFile is null — nothing to persist.");
+				return;
 			}
-		} else {
-			log.info("No batches found on ACH file.");
-		}
 
-		// 3) FILE SUMMARY / CONTROL
-		FileSummaryDetails fileSummary = mapFileSummary(achFile); // ⬅️ no fileId parameter
-		fileSummaryRepository.save(fileSummary);
-		log.info("✅ FileSummary saved");
+			log.info("🔹 Persisting ACH file …");
 
-		log.info("🎉 ACH file persisted successfully.");
-		service.logEvent(achFile.getFileName(), "Process", "SUCCESS");
-		
-		}catch(Exception e) {
-			service.logEvent(achFile.getFileName(), "Process","FAILED");
+			// 1) FILE HEADER
+			FileHeaderDetails fileHeader = mapFileHeader(achFile);
+			fileHeader = fileHeaderRepository.save(fileHeader);
+			log.info("✅ FileHeader saved (id={})", fileHeader.getId());
+
+			// 2) BATCHES + ENTRIES
+			List<Batch> batches = achFile.getBatches();
+			if (batches != null && !batches.isEmpty()) {
+				int batchIdx = 0;
+				for (Batch b : batches) {
+					batchIdx++;
+
+					BatchHeaderDetails batchHeader = mapBatchHeader(b);
+					batchHeader = batchHeaderRepository.save(batchHeader);
+					log.info("✅ BatchHeader saved (id={}) [#{}]", batchHeader.getId(), batchIdx);
+
+					if (b.getEntryDetails() != null) {
+						int entryIdx = 0;
+						for (com.alacriti.inbound.util.EntryDetail e : b.getEntryDetails()) {
+							entryIdx++;
+							EntryDetails entry = mapEntryDetail(e, b);
+							entryDetailRepository.save(entry);
+						}
+						log.info("   ↳ {} EntryDetails saved for batch #{}", b.getEntryDetails().size(), batchIdx);
+					}
+				}
+			} else {
+				log.info("No batches found on ACH file.");
+			}
+
+			// 3) FILE SUMMARY / CONTROL
+			FileSummaryDetails fileSummary = mapFileSummary(achFile); // ⬅️ no fileId parameter
+			fileSummaryRepository.save(fileSummary);
+			log.info("✅ FileSummary saved");
+
+			log.info("🎉 ACH file persisted successfully.");
+			//service.logEvent(achFile.getFileName(), "Process", "SUCCESS");
+
+		} catch (Exception e) {
+			//service.logEvent(achFile.getFileName(), "Process","FAILED");
 		}
 	}
 
