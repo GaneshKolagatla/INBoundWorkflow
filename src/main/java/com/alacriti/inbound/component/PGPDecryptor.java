@@ -88,7 +88,7 @@ public class PGPDecryptor {
 			} else {
 				throw new PGPException("Decryption failed: unexpected message type " + message.getClass().getName());
 			}
-
+			
 			if (outputFile.length() == 0) {
 				throw new java.io.IOException("Decryption completed but file is empty!");
 			}

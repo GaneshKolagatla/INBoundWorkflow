@@ -20,8 +20,7 @@ import com.alacriti.inbound.serviceimpl.DownloadMetadataInfoImpl;
 @RestController
 public class ACHFileHandlerController {
 
-	//    @Autowired
-	//    IDownloadMetadataInfo info;
+	
 
 	@Autowired
 	IBatchNachaFileDownloader<IDownloadMetadataInfo> fileDownloader;
@@ -40,12 +39,12 @@ public class ACHFileHandlerController {
 
     @PostMapping("/download")
     public void downloadFile(@RequestBody DownloadDTO dto) throws Exception {
+    	
     	Optional<SftpServerCredentials> sftpServerObj = repo.findById(dto.getClient_key());
     	SftpServerCredentials credentialsObj = sftpServerObj.get();
     	IDownloadMetadataInfo info =new DownloadMetadataInfoImpl(DOWNLOAD_DIR,DECRYPTED_DIR,PRIVATE_KEY_PATH,PASSPHRASE,credentialsObj);
         List<File> downloadedFiles = fileDownloader.download(info);
         executor.execute(downloadedFiles);
         
-  
     }
 }
