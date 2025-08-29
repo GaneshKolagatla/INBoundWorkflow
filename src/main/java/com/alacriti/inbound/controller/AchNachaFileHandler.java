@@ -28,7 +28,7 @@ public class AchNachaFileHandler {
 		this.workflowExecutor = workflowExecutor;
 	}
 
-	@GetMapping
+	@GetMapping("download/process")
 	public void achFileProcessor() {
 		// Step 1: Get file records with "Ready to Process" status
 		List<FileEventLog> readyFiles = fileEventLogService.getFilesByStatus("Ready to Process");
