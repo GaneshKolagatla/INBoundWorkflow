@@ -50,10 +50,6 @@ public class AchNachaFileHandler {
 		// Step 3: Call workflow executor
 		workflowExecutor.execute(fileMap);
 
-		// Step 4: Update status in DB after processing
-//		for (Long id : fileMap.keySet()) {
-//		    fileEventLogService.updateFileEvent(id, "File Processed");
-//		}
 
 	}
 }

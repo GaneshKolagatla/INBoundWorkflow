@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "file_event_log")
+@Table(name = "file_table")
 @Data
 public class FileEventLog {
 

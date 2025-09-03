@@ -45,8 +45,11 @@ public class BatchDataPreProcessorImpl implements IBatchDataPreProcessor {
 
 			log.info("✅ Pre-processing completed for file: {}");
 			service.updateFileEvent(achFile.remoteId, "FILE-Pre-PROCESSED", "SUCCESS");
+			
 		} catch (Exception e) {
 			service.updateFileEvent(achFile.remoteId, "FILE-Pre-PROCESSED", "FAILED");
 		}
+		
+		
 	}
 }

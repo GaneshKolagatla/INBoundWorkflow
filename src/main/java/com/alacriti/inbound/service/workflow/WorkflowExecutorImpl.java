@@ -59,7 +59,10 @@ public class WorkflowExecutorImpl implements IWorkflowExecutor {
 		        log.info("✅ Finished workflow for file: {}", file.getName());
 
 		    } catch (Exception e) {
+		    	
 		        log.error("❌ Error processing file {}: {}", file.getName(), e.getMessage(), e);
+		        
+		        
 		    }
 		}
 
