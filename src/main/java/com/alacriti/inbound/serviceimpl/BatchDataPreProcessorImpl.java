@@ -1,5 +1,8 @@
 package com.alacriti.inbound.serviceimpl;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,14 +23,25 @@ public class BatchDataPreProcessorImpl implements IBatchDataPreProcessor {
 
 	@Override
 	public void preProcess(ACHFile achFile) throws Exception {
-
 		try {
 			log.info("🔄 Starting pre-processing for ACH file...");
 
-			// Add file-level metadata
-			//achFile.setProcessedTime(java.time.LocalDateTime.now());
+			if (achFile == null) {
+				log.warn("ACHFile is null, skipping pre-processing.");
+				return;
+			}
 
-			// Clean / normalize each entry
+			// ✅ set file metadata (you can wire fileName from your download logic)
+			if (achFile.getFileName() == null) {
+				achFile.setFileName("ACH_" + System.currentTimeMillis() + ".ach");
+			}
+
+			// ✅ optional: set creationDate if not already set
+			if (achFile.getCreationDate() == null) {
+				achFile.setCreationDate(LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE));
+			}
+
+			// ✅ clean / normalize each entry
 			for (Batch batch : achFile.getBatches()) {
 				for (EntryDetail entry : batch.getEntryDetails()) {
 					// Example: remove leading zeros in amount
@@ -43,13 +57,12 @@ public class BatchDataPreProcessorImpl implements IBatchDataPreProcessor {
 				}
 			}
 
-			log.info("✅ Pre-processing completed for file: {}");
-			service.updateFileEvent(achFile.remoteId, "FILE-Pre-PROCESSED", "SUCCESS");
-			
+			log.info("✅ Pre-processing completed for file: {}", achFile.getFileName());
+			service.updateFileEvent(achFile.getRemoteId(), "FILE-Pre-PROCESSED", "SUCCESS");
+
 		} catch (Exception e) {
-			service.updateFileEvent(achFile.remoteId, "FILE-Pre-PROCESSED", "FAILED");
+			log.error("❌ Pre-processing failed", e);
+			service.updateFileEvent(achFile != null ? achFile.getRemoteId() : null, "FILE-Pre-PROCESSED", "FAILED");
 		}
-		
-		
 	}
 }

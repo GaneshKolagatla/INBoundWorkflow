@@ -30,35 +30,23 @@ public class BatchDataReaderImpl implements IBatchDataReader {
 	IFileEventLogService service;
 
 	@Override
-	public ACHFile read(File file,Long remoteId) throws Exception {
+	public ACHFile read(File file, Long remoteId) throws Exception {
 		ACHFile achFile = new ACHFile();
-		achFile.remoteId=remoteId;
+		achFile.remoteId = remoteId;
 
-		
 		try {
 			log.info("📂 Reading ACH file: {}", file.getAbsolutePath());
 			List<String> lines = Files.readAllLines(file.toPath());
 
 			achFile.setFileName(file.getName());
-
-			String fileName = file.getName();
-
-			String baseName = fileName.substring(0, fileName.lastIndexOf('.'));
-
-			String[] parts = baseName.split("_");
-
-			String creationDate = parts[2]; // "20250821"
-
-			achFile.setCreationDate(creationDate); // Set in ACHFile
+			achFile.setCreationDate(extractCreationDate(file.getName()));
 
 			List<Batch> batches = new ArrayList<>();
 			Batch currentBatch = null;
 
 			for (String line : lines) {
 				if (line.length() < 94) {
-					throw new Exception();
-					//                log.warn("Skipping invalid line (length < 94): {}", line);
-					//                continue;
+					throw new Exception("Invalid line length < 94");
 				}
 
 				char type = line.charAt(0);
@@ -84,7 +72,12 @@ public class BatchDataReaderImpl implements IBatchDataReader {
 					}
 					break;
 				case '9':
-					achFile.setFileControl(parseFileControl(line));
+					// ✅ Only parse the FIRST non-padding '9' record as File Control
+					if (achFile.getFileControl() == null && !isPaddingNines(line)) {
+						achFile.setFileControl(parseFileControl(line));
+					} else {
+						log.debug("Skipping padding/duplicate '9' record.");
+					}
 					break;
 				default:
 					log.warn("Unknown record type '{}' in line: {}", type, line);
@@ -94,10 +87,35 @@ public class BatchDataReaderImpl implements IBatchDataReader {
 			achFile.setBatches(batches);
 
 		} catch (Exception e) {
+			log.error("Read failed", e);
 			service.updateFileEvent(achFile.remoteId, "FILE-READED", "FAILED");
+			throw e;
 		}
-		service.updateFileEvent(achFile.remoteId, "FILE-READED", "SUCESS");
+
+		service.updateFileEvent(achFile.remoteId, "FILE-READED", "SUCCESS");
 		return achFile;
+	}
+
+	/** padding lines are 94 chars of '9' */
+	private boolean isPaddingNines(String l) {
+		if (l == null || l.length() < 94)
+			return false;
+		for (int i = 0; i < l.length(); i++) {
+			if (l.charAt(i) != '9')
+				return false;
+		}
+		return true;
+	}
+
+	private String extractCreationDate(String fileName) {
+		try {
+			String baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+			String[] parts = baseName.split("_");
+			return parts.length >= 3 ? parts[2] : null; // e.g., YYYYMMDD
+		} catch (Exception e) {
+			log.warn("⚠️ Could not extract creation date from file name: {}", fileName);
+			return null;
+		}
 	}
 
 	private FileHeader parseFileHeader(String l) {

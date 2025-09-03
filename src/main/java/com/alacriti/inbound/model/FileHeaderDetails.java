@@ -1,8 +1,6 @@
 package com.alacriti.inbound.model;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -30,8 +28,8 @@ public class FileHeaderDetails {
 	private String priorityCode;
 	private String immediateDestination;
 	private String immediateOrigin;
-	private LocalDate fileCreationDate;
-	private LocalTime fileCreationTime;
+	private String fileCreationDate;
+	private String fileCreationTime;
 	private String fileIdModifier;
 	private String recordSize;
 	private String blockingFactor;
@@ -40,7 +38,7 @@ public class FileHeaderDetails {
 	private String originName;
 	private String referenceCode;
 
-	private String clientKey;
+	//private String clientKey;
 	private String fileName;
 	private LocalDateTime createdAt;
 }

@@ -36,13 +36,8 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 	@Autowired
 	private IFileEventLogService service;
 
-	/**
-	 * Persist ACH structures (already parsed & validated) to DB.
-	 * No JPA relationships; all tables are flat.
-	 */
 	@Override
 	public void process(ACHFile achFile) {
-
 		try {
 			if (achFile == null) {
 				log.warn("process(): ACHFile is null — nothing to persist.");
@@ -63,7 +58,7 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 				for (Batch b : batches) {
 					batchIdx++;
 
-					BatchHeaderDetails batchHeader = mapBatchHeader(b);
+					BatchHeaderDetails batchHeader = mapBatchHeader(b, achFile);
 					batchHeader = batchHeaderRepository.save(batchHeader);
 					log.info("✅ BatchHeader saved (id={}) [#{}]", batchHeader.getId(), batchIdx);
 
@@ -71,7 +66,7 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 						int entryIdx = 0;
 						for (com.alacriti.inbound.util.EntryDetail e : b.getEntryDetails()) {
 							entryIdx++;
-							EntryDetails entry = mapEntryDetail(e, b);
+							EntryDetails entry = mapEntryDetail(e, b, achFile);
 							entryDetailRepository.save(entry);
 						}
 						log.info("   ↳ {} EntryDetails saved for batch #{}", b.getEntryDetails().size(), batchIdx);
@@ -82,15 +77,16 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 			}
 
 			// 3) FILE SUMMARY / CONTROL
-			FileSummaryDetails fileSummary = mapFileSummary(achFile); // ⬅️ no fileId parameter
+			FileSummaryDetails fileSummary = mapFileSummary(achFile);
 			fileSummaryRepository.save(fileSummary);
 			log.info("✅ FileSummary saved");
 
 			log.info("🎉 ACH file persisted successfully.");
-			service.updateFileEvent(achFile.remoteId, "FILE-PROCESSED", "SUCCESS");
+			service.updateFileEvent(achFile.getRemoteId(), "FILE-PROCESSED", "SUCCESS");
 
 		} catch (Exception e) {
-			service.updateFileEvent(achFile.remoteId, "FILE-PROCESSED", "FAILED");
+			log.error("❌ Error persisting ACH file", e);
+			service.updateFileEvent(achFile != null ? achFile.getRemoteId() : null, "FILE-PROCESSED", "FAILED");
 		}
 	}
 
@@ -104,8 +100,6 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 			fh.setPriorityCode(safe(src.getPriorityCode()));
 			fh.setImmediateDestination(safe(src.getImmediateDestination()));
 			fh.setImmediateOrigin(safe(src.getImmediateOrigin()));
-			// If your entity has LocalDate/LocalTime fields, set them in PreProcessor and stash there.
-			// Here we keep string-like fields only to avoid type mismatches.
 			fh.setFileIdModifier(safe(src.getFileIdModifier()));
 			fh.setRecordSize(safe(src.getRecordSize()));
 			fh.setBlockingFactor(safe(src.getBlockingFactor()));
@@ -113,14 +107,18 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 			fh.setDestinationName(safe(src.getImmediateDestinationName()));
 			fh.setOriginName(safe(src.getImmediateOriginName()));
 			fh.setReferenceCode(safe(src.getReferenceCode()));
+			fh.setFileCreationDate(safe(src.getFileCreationDate())); // YYMMDD from record
+			fh.setFileCreationTime(safe(src.getFileCreationTime()));
+			fh.setReferenceCode(safe(src.getReferenceCode())); // was missing
+
 		}
-		// Optional columns
-		fh.setFileName(null); // set in pre-processor if you want actual file name
+		fh.setFileName(file.getFileName());
+
 		fh.setCreatedAt(LocalDateTime.now());
 		return fh;
 	}
 
-	private BatchHeaderDetails mapBatchHeader(Batch batch) {
+	private BatchHeaderDetails mapBatchHeader(Batch batch, ACHFile file) {
 		BatchHeaderDetails bh = new BatchHeaderDetails();
 		if (batch != null && batch.getBatchHeader() != null) {
 			var src = batch.getBatchHeader();
@@ -132,43 +130,39 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 			bh.setStandardEntryClassCode(safe(src.getStandardEntryClassCode()));
 			bh.setCompanyEntryDescription(safe(src.getCompanyEntryDescription()));
 			bh.setCompanyDescriptiveDate(safe(src.getCompanyDescriptiveDate()));
-			// Effective date often needs parsing to LocalDate in your entity; if your entity
-			// uses String, keep it as-is. If it's LocalDate, parse in PreProcessor.
+			// ✅ include this (you were missing it)
+			bh.setEffectiveEntryDate(safe(src.getEffectiveEntryDate()));
 			bh.setSettlementDate(safe(src.getSettlementDate()));
 			bh.setOriginatorStatusCode(safe(src.getOriginatorStatusCode()));
 			bh.setOriginatingDFIIdentification(safe(src.getOriginatingDFI()));
 			bh.setBatchNumber(safe(src.getBatchNumber()));
 		}
-		bh.setFileName(null);
+		bh.setFileName(file.getFileName());
 		bh.setCreatedAt(LocalDateTime.now());
 		return bh;
 	}
 
-	private EntryDetails mapEntryDetail(com.alacriti.inbound.util.EntryDetail e, Batch parentBatch) {
+	private EntryDetails mapEntryDetail(com.alacriti.inbound.util.EntryDetail e, Batch parentBatch, ACHFile file) {
 		EntryDetails ed = new EntryDetails();
 		ed.setRecordType(safe(e.getRecordTypeCode()));
 		ed.setTransactionCode(safe(e.getTransactionCode()));
 		ed.setRdfiRoutingNumber(safe(e.getReceivingDFIIdentification()));
 		ed.setCheckDigit(safe(e.getCheckDigit()));
 		ed.setRdfiAccountNumber(safe(e.getDfiAccountNumber()));
-
-		// amount & addenda number are numeric in many schemas; parse leniently
 		ed.setAmount(parseIntSafe(e.getAmount()));
 		ed.setAddendaRecordIndicator(parseIntSafe(e.getAddendaRecordIndicator()));
-
 		ed.setIndividualIdNumber(safe(e.getIndividualIdentificationNumber()));
 		ed.setIndividualName(safe(e.getIndividualName()));
 		ed.setDiscretionaryData(safe(e.getDiscretionaryData()));
 		ed.setTraceNumber(safe(e.getTraceNumber()));
 		ed.setReceivingDFI(safe(e.getReceivingDFIIdentification()));
 
-		// denormalized batch info if your entity has these columns
 		if (parentBatch != null && parentBatch.getBatchHeader() != null) {
 			ed.setBatchNumber(safe(parentBatch.getBatchHeader().getBatchNumber()));
 			ed.setOriginatingDfiId(safe(parentBatch.getBatchHeader().getOriginatingDFI()));
 		}
 
-		ed.setFileName(null);
+		ed.setFileName(file.getFileName());
 		ed.setCreatedAt(LocalDateTime.now());
 		return ed;
 	}
@@ -186,7 +180,7 @@ public class BatchDataProcessorImpl implements IBatchDataProcessor {
 			fs.setTotalCreditEntryDollarAmount(safe(src.getTotalCreditEntryDollarAmount()));
 			fs.setReserved(safe(src.getReserved()));
 		}
-		fs.setFileName(null); // put actual name in pre-processor if needed
+		fs.setFileName(file.getFileName());
 		fs.setCreatedAt(LocalDateTime.now());
 		return fs;
 	}

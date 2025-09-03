@@ -1,6 +1,5 @@
 package com.alacriti.inbound.model;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
@@ -33,7 +32,7 @@ public class BatchHeaderDetails {
 	private String standardEntryClassCode;
 	private String companyEntryDescription;
 	private String companyDescriptiveDate;
-	private LocalDate effectiveEntryDate;
+	private String effectiveEntryDate;
 	private String settlementDate;
 	private String originatorStatusCode;
 	private String originatingDFIIdentification;

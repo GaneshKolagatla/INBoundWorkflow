@@ -3,6 +3,7 @@ package com.alacriti.inbound.serviceimpl;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,22 +11,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import com.alacriti.inbound.model.RemoteFileEvent;
 import com.alacriti.inbound.model.SftpServerCredentials;
+import com.alacriti.inbound.repository.RemoteFileEventRepository;
 import com.alacriti.inbound.service.IFileEventLogService;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
-import lombok.extern.slf4j.Slf4j;
-
 @Service
-@Slf4j
 public class SftpDownloadService {
 
 	private final PGPDecryptionService pgpEncryptionService;
 
 	@Autowired
-	IFileEventLogService service;
+	private IFileEventLogService service; // old log system (keep for backward compatibility)
+
+	@Autowired
+	private RemoteFileEventRepository remoteFileEventRepository; // DB repo for remote_file_tbl
 
 	public SftpDownloadService(PGPDecryptionService pgpEncryptionService) {
 		this.pgpEncryptionService = pgpEncryptionService;
@@ -37,7 +40,6 @@ public class SftpDownloadService {
 		List<File> downloadedFiles = downloadFilesFromSftp(config, date, downloadDir);
 
 		if (downloadedFiles.isEmpty()) {
-			log.info("⚠️ No files found on SFTP for date {}", date);
 			return;
 		}
 
@@ -46,9 +48,6 @@ public class SftpDownloadService {
 			decryptedFolder.mkdirs();
 
 		for (File encryptedFile : downloadedFiles) {
-			log.info("⬇️ Downloaded: {}", encryptedFile.getName());
-
-			// Remove .pgp suffix for decrypted file
 			String decryptedFileName = encryptedFile.getName().endsWith(".pgp")
 					? encryptedFile.getName().substring(0, encryptedFile.getName().length() - 4)
 					: encryptedFile.getName();
@@ -59,18 +58,22 @@ public class SftpDownloadService {
 				pgpEncryptionService.decryptACHFile(encryptedFile, decryptedFile, keyStream, passphrase);
 
 				if (decryptedFile.length() > 0) {
-					log.info("✅ Successfully decrypted: {}", decryptedFile.getAbsolutePath());
-					service.logEvent(decryptedFile.getName(), "Ready to Process", "SUCCESS");
+					service.logEvent(decryptedFile.getName(), "Ready to Process", "SUCCESS"); // old log
+					saveRemoteFileEvent(config.getClientKey(), decryptedFile.getName(), "DECRYPT",
+							"DEC" + System.currentTimeMillis(), "SUCCESS", "Decrypted successfully");
 				} else {
-					log.warn("⚠️ Decrypted file is empty, skipping: {}", decryptedFile.getName());
 					decryptedFile.delete();
+					saveRemoteFileEvent(config.getClientKey(), decryptedFile.getName(), "DECRYPT",
+							"DEC" + System.currentTimeMillis(), "FAILED", "Decrypted file was empty");
 				}
 			} catch (Exception e) {
-				log.error("❌ Failed to decrypt file {}: {}", encryptedFile.getName(), e.getMessage());
+				saveRemoteFileEvent(config.getClientKey(), decryptedFile.getName(), "DECRYPT",
+						"DEC" + System.currentTimeMillis(), "FAILED", e.getMessage());
 			}
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<File> downloadFilesFromSftp(SftpServerCredentials config, String date, String downloadDir)
 			throws Exception {
 		List<File> downloadedFiles = new ArrayList<>();
@@ -92,25 +95,54 @@ public class SftpDownloadService {
 
 			if (entry.getAttrs().isDir() || fileName.startsWith("."))
 				continue;
-
-			// Only download files containing today's date
 			if (!fileName.contains(date))
 				continue;
 
-			File localFile = new File(downloadDir, fileName);
-			try (FileOutputStream fos = new FileOutputStream(localFile)) {
-				sftp.get(config.getRemoteDirectory() + "/" + fileName, fos);
+			try {
+				File localFile = new File(downloadDir, fileName);
+				try (FileOutputStream fos = new FileOutputStream(localFile)) {
+					sftp.get(config.getRemoteDirectory() + "/" + fileName, fos);
+				}
+
+				downloadedFiles.add(localFile);
+
+				// Log both DOWNLOAD (legacy) and PULL (new)
+				saveRemoteFileEvent(config.getClientKey(), fileName, "DOWNLOAD", "D" + System.currentTimeMillis(),
+						"SUCCESS", "Downloaded successfully (legacy)");
+				saveRemoteFileEvent(config.getClientKey(), fileName, "PULL", "PULL" + System.currentTimeMillis(),
+						"SUCCESS", "Pulled from SFTP to local successfully");
+
+			} catch (Exception ex) {
+				saveRemoteFileEvent(config.getClientKey(), fileName, "PULL", "PULL" + System.currentTimeMillis(),
+						"FAILED", ex.getMessage());
+				throw ex;
 			}
-
-			downloadedFiles.add(localFile);
-			log.info("⬇️ File downloaded from SFTP: {}", fileName);
-			//service.logEvent(entry.getFilename(), "DOWNLOAD", "SUCCESS");
-
 		}
 
 		sftp.disconnect();
 		session.disconnect();
 
 		return downloadedFiles;
+	}
+
+	// 🔹 You can reuse this same method from an UploadService to log PUSH events
+	public void logPushEvent(String clientKey, String fileName, boolean success, String remarks) {
+		saveRemoteFileEvent(clientKey, fileName, "PUSH", "PUSH" + System.currentTimeMillis(),
+				success ? "SUCCESS" : "FAILED", remarks);
+	}
+
+	// helper method to save events
+	private void saveRemoteFileEvent(String clientKey, String fileName, String eventType, String sequenceNo,
+			String status, String remarks) {
+		RemoteFileEvent event = new RemoteFileEvent();
+		event.setClientKey(clientKey);
+		event.setFileName(fileName);
+		event.setEventType(eventType); // DOWNLOAD / PULL / PUSH / DECRYPT
+		event.setSequenceNo(sequenceNo);
+		event.setStatus(status);
+		event.setEventTime(LocalDateTime.now());
+		event.setRemarks(remarks);
+
+		remoteFileEventRepository.save(event);
 	}
 }
