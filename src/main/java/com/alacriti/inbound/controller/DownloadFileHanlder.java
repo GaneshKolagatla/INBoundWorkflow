@@ -5,8 +5,11 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alacriti.inbound.dto.DownloadDTO;
@@ -36,15 +39,28 @@ public class DownloadFileHanlder {
 	private static final String DECRYPTED_DIR = "target/decrypted-ach";
 	private static final String PASSPHRASE = "8823027374";
 
+
 	@PostMapping("/download")
-	public void downloadFile(@RequestBody DownloadDTO dto) throws Exception {
-		Optional<SftpServerCredentials> sftpServerObj = repo.findById(dto.getClient_key());
-		SftpServerCredentials credentialsObj = sftpServerObj.get();
-		IDownloadMetadataInfo info = new DownloadMetadataInfoImpl(DOWNLOAD_DIR, DECRYPTED_DIR, PRIVATE_KEY_PATH,
-				PASSPHRASE, credentialsObj);
-		fileDownloader.download(info);
+	public ResponseEntity<?> downloadFiles(@RequestBody DownloadDTO dto, 
+	                                       @RequestParam(defaultValue = "1") int days) throws Exception {
+	    Optional<SftpServerCredentials> sftpServerObj = repo.findById(dto.getClient_key());
+	    if (sftpServerObj.isEmpty()) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Client key not found.");
+	    }
 
+	    if (days <= 0) {
+	        return ResponseEntity.badRequest().body("Days parameter must be greater than 0.");
+	    }
 
-    }
+	    SftpServerCredentials credentialsObj = sftpServerObj.get();
+	    IDownloadMetadataInfo info = new DownloadMetadataInfoImpl(DOWNLOAD_DIR, DECRYPTED_DIR, PRIVATE_KEY_PATH,
+	            PASSPHRASE, credentialsObj);
+
+	    // Pass 'days' parameter to the download service
+	    List<File> downloadedFiles = fileDownloader.download(info, days);
+
+	    return ResponseEntity.ok().body("Downloaded files count: " + downloadedFiles.size());
+	}
+
 
 }
