@@ -39,17 +39,7 @@ public class DownloadFileHanlder {
 	private static final String DECRYPTED_DIR = "target/decrypted-ach";
 	private static final String PASSPHRASE = "8823027374";
 
-//	@PostMapping("/download")
-//	public void downloadFile(@RequestBody DownloadDTO dto) throws Exception {
-//		Optional<SftpServerCredentials> sftpServerObj = repo.findById(dto.getClient_key());
-//		SftpServerCredentials credentialsObj = sftpServerObj.get();
-//		IDownloadMetadataInfo info = new DownloadMetadataInfoImpl(DOWNLOAD_DIR, DECRYPTED_DIR, PRIVATE_KEY_PATH,
-//				PASSPHRASE, credentialsObj);
-//		fileDownloader.download(info);
-//
-//
-//    }
-	
+
 	@PostMapping("/download")
 	public ResponseEntity<?> downloadFiles(@RequestBody DownloadDTO dto, 
 	                                       @RequestParam(defaultValue = "1") int days) throws Exception {

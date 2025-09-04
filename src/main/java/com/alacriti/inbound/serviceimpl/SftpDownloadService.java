@@ -37,97 +37,21 @@ public class SftpDownloadService {
 	@Autowired
 	RemoteFileRepository remoteFileRepository;
 	
-//	public void downloadAndDecryptByDate(SftpServerCredentials config, String date, String downloadDir,
-//			String decryptedDir, String privateKeyPath, String passphrase) throws Exception {
-//
-//		List<File> downloadedFiles = downloadFilesFromSftp(config, date, downloadDir);
-//
-//		if (downloadedFiles.isEmpty()) {
-//			log.info("⚠️ No files found on SFTP for date {}", date);
-//			return;
-//		}
-//
-//		File decryptedFolder = new File(decryptedDir);
-//		if (!decryptedFolder.exists())
-//			decryptedFolder.mkdirs();
-//
-//		for (File encryptedFile : downloadedFiles) {
-//			log.info("⬇️ Downloaded: {}", encryptedFile.getName());
-//
-//			// Remove .pgp suffix for decrypted file
-//			String decryptedFileName = encryptedFile.getName().endsWith(".pgp")
-//					? encryptedFile.getName().substring(0, encryptedFile.getName().length() - 4)
-//					: encryptedFile.getName();
-//
-//			File decryptedFile = new File(decryptedFolder, decryptedFileName);
-//
-//			try (InputStream keyStream = new ClassPathResource(privateKeyPath).getInputStream()) {
-//				pgpEncryptionService.decryptACHFile(encryptedFile, decryptedFile, keyStream, passphrase);
-//
-//				if (decryptedFile.length() > 0) {
-//					log.info("✅ Successfully decrypted: {}", decryptedFile.getAbsolutePath());
-//					service.logEvent(decryptedFile.getName(), "Ready to Process", "SUCCESS");
-//				} else {
-//					log.warn("⚠️ Decrypted file is empty, skipping: {}", decryptedFile.getName());
-//					decryptedFile.delete();
-//				}
-//			} catch (Exception e) {
-//				log.error("❌ Failed to decrypt file {}: {}", encryptedFile.getName(), e.getMessage());
-//			}
-//		}
-//	}
-//
-//	private List<File> downloadFilesFromSftp(SftpServerCredentials config, String date, String downloadDir)
-//			throws Exception {
-//		List<File> downloadedFiles = new ArrayList<>();
-//
-//		JSch jsch = new JSch();
-//		Session session = jsch.getSession(config.getUsername(), config.getHost(), config.getPort());
-//		session.setPassword(config.getPassword());
-//		session.setConfig("StrictHostKeyChecking", "no");
-//		session.connect();
-//
-//		ChannelSftp sftp = (ChannelSftp) session.openChannel("sftp");
-//		sftp.connect();
-//
-//		List<ChannelSftp.LsEntry> files = new ArrayList<>();
-//		sftp.ls(config.getRemoteDirectory()).forEach(obj -> files.add((ChannelSftp.LsEntry) obj));
-//
-//		for (ChannelSftp.LsEntry entry : files) {
-//			String fileName = entry.getFilename();
-//
-//			if (entry.getAttrs().isDir() || fileName.startsWith("."))
-//				continue;
-//
-//			// Only download files containing today's date
-//			if (!fileName.contains(date))
-//				continue;
-//
-//			File localFile = new File(downloadDir, fileName);
-//			try (FileOutputStream fos = new FileOutputStream(localFile)) {
-//				sftp.get(config.getRemoteDirectory() + "/" + fileName, fos);
-//			}
-//
-//			downloadedFiles.add(localFile);
-//			log.info("⬇️ File downloaded from SFTP: {}", fileName);
-//		}
-//
-//		sftp.disconnect();
-//		session.disconnect();
-//
-//		return downloadedFiles;
-//	}
-	public void downloadAndDecryptByDates(
-	        SftpServerCredentials config, 
-	        List<String> dateStrings, 
+
+
+
+	
+	// SftpDownloadService.java
+	public List<File> downloadAndDecryptByDates(
+	        SftpServerCredentials config,
+	        List<String> dateStrings,
 	        String downloadDir,
 	        String decryptedDir,
-	        String privateKeyPath, 
+	        String privateKeyPath,
 	        String passphrase) throws Exception {
 
-	    List<File> downloadedFiles = new ArrayList<>();
+	    List<File> decryptedThisRun = new ArrayList<>();   // <--- keep only this run's files
 
-	    // Connect to SFTP
 	    JSch jsch = new JSch();
 	    Session session = jsch.getSession(config.getUsername(), config.getHost(), config.getPort());
 	    session.setPassword(config.getPassword());
@@ -150,7 +74,6 @@ public class SftpDownloadService {
 	        boolean matchesDate = dateStrings.stream().anyMatch(fileName::contains);
 	        if (!matchesDate) continue;
 
-	        // Check if already downloaded -- implement this method to query your DB or tracking mechanism
 	        if (isFileAlreadyDownloaded(fileName)) {
 	            log.info("Skipping already downloaded file: {}", fileName);
 	            continue;
@@ -160,13 +83,11 @@ public class SftpDownloadService {
 	        try (FileOutputStream fos = new FileOutputStream(localFile)) {
 	            sftp.get(config.getRemoteDirectory() + "/" + fileName, fos);
 	        }
-	        downloadedFiles.add(localFile);
 	        log.info("⬇️ File downloaded from SFTP: {}", fileName);
 
-	        // Decrypt file
 	        String decryptedFileName = fileName.endsWith(".pgp")
-	            ? fileName.substring(0, fileName.length() - 4)
-	            : fileName;
+	                ? fileName.substring(0, fileName.length() - 4)
+	                : fileName;
 
 	        File decryptedFile = new File(decryptedFolder, decryptedFileName);
 	        try (InputStream keyStream = new ClassPathResource(privateKeyPath).getInputStream()) {
@@ -174,9 +95,9 @@ public class SftpDownloadService {
 	            if (decryptedFile.length() > 0) {
 	                log.info("✅ Successfully decrypted: {}", decryptedFile.getAbsolutePath());
 	                service.logEvent(decryptedFile.getName(), "Ready to Process", "SUCCESS");
-
-	                // Mark file as downloaded in DB or tracking system
 	                markFileAsDownloaded(fileName);
+
+	                decryptedThisRun.add(decryptedFile);   // <--- ONLY add when success
 	            } else {
 	                log.warn("⚠️ Decrypted file empty, skipping: {}", decryptedFile.getName());
 	                decryptedFile.delete();
@@ -189,10 +110,13 @@ public class SftpDownloadService {
 	    sftp.disconnect();
 	    session.disconnect();
 
-	    if (downloadedFiles.isEmpty()) {
+	    if (decryptedThisRun.isEmpty()) {
 	        log.info("⚠️ No files found on SFTP for given date range");
 	    }
+
+	    return decryptedThisRun;   
 	}
+
 
 
    private boolean isFileAlreadyDownloaded(String fileName) {

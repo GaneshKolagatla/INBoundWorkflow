@@ -22,22 +22,7 @@ public class BatchNachaFileDownloaderImpl implements IBatchNachaFileDownloader<I
 	SftpDownloadService sftpDownloadService;
 	
 	
-//	@Override
-//	public List<File> download(IDownloadMetadataInfo metadata,int days) throws Exception {
-//		Files.createDirectories(Paths.get(metadata.getDownloadDir()));
-//		Files.createDirectories(Paths.get(metadata.getDecryptDir()));
-//
-//		// Use today's date automatically
-//		String today = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
-//
-//		sftpDownloadService.downloadAndDecryptByDate(metadata.getSftpCredentialObj(), today, metadata.getDownloadDir(),metadata.getDecryptDir(),metadata.getPrivateKeyDir(),
-//				metadata.getPassPhrase());
-//
-//		File[] decryptedFiles = new File(metadata.getDecryptDir()).listFiles(File::isFile);
-//		return decryptedFiles == null ? List.of() : Arrays.asList(decryptedFiles);
-//
-//	}
-	
+
 	@Override
 	public List<File> download(IDownloadMetadataInfo metadata, int days) throws Exception {
 	    Files.createDirectories(Paths.get(metadata.getDownloadDir()));
@@ -54,15 +39,14 @@ public class BatchNachaFileDownloaderImpl implements IBatchNachaFileDownloader<I
 	    }
 
 	    // Pass list of dates instead of a single date
-	    sftpDownloadService.downloadAndDecryptByDates(metadata.getSftpCredentialObj(),
+	   return sftpDownloadService.downloadAndDecryptByDates(metadata.getSftpCredentialObj(),
 	            dateStrings,
 	            metadata.getDownloadDir(),
 	            metadata.getDecryptDir(),
 	            metadata.getPrivateKeyDir(),
 	            metadata.getPassPhrase());
 
-	    File[] decryptedFiles = new File(metadata.getDecryptDir()).listFiles(File::isFile);
-	    return decryptedFiles == null ? List.of() : Arrays.asList(decryptedFiles);
+	  
 	}
 
 }
